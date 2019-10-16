@@ -76,10 +76,42 @@ public class DAO {
 	 * taille
 	 * @throws java.lang.Exception si la transaction a échoué
 	 */
-	public void createInvoice(CustomerEntity customer, int[] productIDs, int[] quantities)
-		throws Exception {
+        public void createInvoice(CustomerEntity customer, int[] productIDs, int[] quantities)
+		throws Exception {//ID INTEGER IDENTITY,CustomerID INTEGER,Total DECIMAL(10,2)
+                double total = 0;
+                String sql = "SELECT PRODUCT WHERE ID = ?";
+                String sql2 = "INSERT INTO INVOICE VALUES(?,?,?)";
+                String sql3 = "INSERT INTO Item VALUES (?,?,?,?,?)";
+            try (Connection connection = myDataSource.getConnection();
+                PreparedStatement stmt = connection.prepareStatement(sql);
+                PreparedStatement stmt2 = connection.prepareStatement(sql2,Statement.RETURN_GENERATED_KEYS);
+                PreparedStatement stmt3 = connection.prepareStatement(sql3);) {
+                int key = stmt2.getGeneratedKeys().getInt(1);
+                for(int i=0;i<productIDs.length;i++){
+                    stmt.setInt(1,productIDs[i]);
+                    ResultSet rs = stmt.executeQuery();
+                    int cost = rs.getInt("PRICE")*quantities[i];
+                    total += cost;
+                    
+                    stmt3.setInt(1,key);
+                    stmt3.setInt(2,i);
+                    stmt3.setInt(3,productIDs[i]);
+                    stmt3.setInt(4,quantities[i]);
+                    stmt3.setFloat(5,cost);
+                    stmt3.executeQuery();
+                    stmt3.executeUpdate();    
+                }
+                stmt2.setInt(1, key);
+                stmt2.setInt(2,customer.getCustomerId());
+                stmt2.setDouble(3, total);
+}
+            
+            
 		throw new UnsupportedOperationException("Pas encore implémenté");
-	}
+            
+        }
+            
+        
 
 	/**
 	 *
@@ -174,4 +206,5 @@ public class DAO {
 
 		return result;
 	}
+        
 }
